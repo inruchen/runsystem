@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Pace Lab</title>
+<meta name="theme-color" content="#0f0f0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pace Lab">
+<link rel="manifest" href="manifest.json">
+<script src="chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f0f0f;--bg2:#161616;--bg3:#1e1e1e;--bg4:#252525;--bdr:rgba(255,255,255,0.08);--txt:#e8e8e8;--txt2:#999;--txt3:#777;--acc:#c8f060;--acc2:#7dd3fc;--warn:#fbbf24;--danger:#f87171}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,sans-serif;font-size:13px}
+/* nav */
+.nav{display:flex;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--bdr);padding:0 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,black 80%,transparent 100%);mask-image:linear-gradient(to right,black 80%,transparent 100%)}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex-shrink:0;padding:12px 14px;font-size:12px;color:var(--txt2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none}
+.nav-btn.active{color:var(--acc);border-bottom-color:var(--acc)}
+.logo{padding:14px 16px;background:var(--bg2);border-bottom:1px solid var(--bdr);display:flex;align-items:baseline;gap:10px}
+.logo-name{font-size:14px;color:var(--acc);font-weight:600;letter-spacing:.05em}
+.logo-sub{font-size:11px;color:var(--txt3)}
+.runtime-bar{padding:10px 16px 12px;background:var(--bg2);border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.runtime-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.runtime-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--bdr);background:var(--bg3);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt2)}
+.runtime-pill.live{border-color:rgba(200,240,96,0.35);background:rgba(200,240,96,0.12);color:var(--acc)}
+.runtime-pill.fallback{border-color:rgba(248,113,113,0.26);background:rgba(248,113,113,0.1);color:var(--danger)}
+.runtime-copy{font-size:11px;color:var(--txt3)}
+.runtime-actions{display:flex;gap:8px;flex-wrap:wrap}
+.runtime-btn{padding:6px 12px;border-radius:999px;border:1px solid var(--bdr);background:var(--bg3);color:var(--txt2);font-size:11px;cursor:pointer}
+.runtime-btn:hover{color:var(--txt)}
+/* pages */
+.page{display:none;padding:16px}
+.page.active{display:block}
+/* cards */
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:16px;margin-bottom:12px}
+.card-title{font-size:11px;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+/* stat grid */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.stat{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:14px}
+.stat-label{font-size:12px;color:var(--txt3);margin-bottom:4px}
+.stat-val{font-size:22px;font-weight:600;color:var(--txt)}
+.stat-val.g{color:var(--acc)}
+.stat-val.w{color:var(--warn)}
+.stat-sub{font-size:11px;color:var(--txt3);margin-top:3px}
+/* chart */
+.chart-wrap{position:relative;width:100%}
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;padding:10px 10px;font-size:11px;color:var(--txt3);letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--bdr);font-weight:500}
+.tbl td{padding:12px 10px;border-bottom:1px solid var(--bdr);color:var(--txt2)}
+.tbl tr:hover td{background:var(--bg3)}
+/* badges */
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px}
+.b-easy{background:rgba(125,211,252,.12);color:var(--acc2)}
+.b-lsd{background:rgba(200,240,96,.12);color:var(--acc)}
+.b-tempo{background:rgba(251,191,36,.12);color:var(--warn)}
+.b-vo2max{background:rgba(248,113,113,.12);color:var(--danger)}
+/* insight */
+.insight{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:16px;margin-bottom:12px}
+.insight-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.insight-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.insight-label{font-size:10px;color:var(--acc);letter-spacing:.1em;text-transform:uppercase}
+.insight-item{font-size:13px;color:var(--txt2);line-height:1.7;margin-bottom:8px;padding-left:12px;border-left:2px solid var(--bg4)}
+/* lsd rows */
+.lsd-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--bdr)}
+.lsd-date{font-size:12px;color:var(--txt2)}
+.lsd-vals{display:flex;gap:12px;font-size:12px;flex-wrap:wrap}
+.lsd-ef{color:var(--acc)}
+.lsd-dc{color:var(--danger)}
+.lsd-grade{font-size:11px;color:var(--txt3)}
+/* progress */
+.prog-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.prog-label{font-size:11px;color:var(--txt2);min-width:80px}
+.prog-track{flex:1;background:var(--bg4);border-radius:3px;height:7px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px}
+.prog-val{font-size:11px;color:var(--txt2);min-width:40px;text-align:right}
+/* filters */
+.filters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.pill{padding:8px 14px;border:1px solid var(--bdr);border-radius:20px;font-size:12px;color:var(--txt2);cursor:pointer;background:none}
+.pill.active{background:var(--acc);color:#000;border-color:var(--acc);font-weight:600}
+.pill:active,.nav-btn:active,.runtime-btn:active{opacity:.6;transform:scale(.97);transition:none}
+</style>
+</head>
+<body>
+<div class="logo">
+  <span class="logo-name">PACE LAB</span>
+  <span class="logo-sub">inruchen · 2026</span>
+</div>
+<div class="runtime-bar">
+  <div class="runtime-meta">
+    <span class="runtime-pill fallback" id="runtime-pill">內嵌快照</span>
+    <span class="runtime-copy" id="runtime-copy">準備檢查 runtime JSON...</span>
+  </div>
+  <div class="runtime-actions">
+    <button class="runtime-btn" onclick="reloadRuntimeApp()">重新載入</button>
+  </div>
+</div>
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('dash',this)">儀表板</button>
+  <button class="nav-btn" onclick="showPage('ef',this)">EF趨勢</button>
+  <button class="nav-btn" onclick="showPage('lsd',this)">LSD分析</button>
+  <button class="nav-btn" onclick="showPage('monthly',this)">月度統計</button>
+  <button class="nav-btn" onclick="showPage('zones',this)">強度分佈</button>
+  <button class="nav-btn" onclick="showPage('log',this)">訓練日誌</button>
+  <button class="nav-btn" onclick="showPage('rhr',this)">RHR/HRV</button>
+</div>
+
+<!-- DASH -->
+<div id="page-dash" class="page active">
+  <div class="stat-grid" id="dash-stats"></div>
+  <div class="insight" id="dash-insight">
+    <div class="insight-hd"><div class="insight-dot"></div><span class="insight-label">訓練洞察</span></div>
+    <div id="dash-insight-body"></div>
+  </div>
+  <div class="card"><div class="card-title">近期 EF 趨勢（最後 20 次）</div><div class="chart-wrap" style="height:180px"><canvas id="c-ef-dash"></canvas></div></div>
+  <div class="card"><div class="card-title">月度里程</div><div class="chart-wrap" style="height:160px"><canvas id="c-km-dash"></canvas></div></div>
+  <div class="card"><div class="card-title">強度區間分佈</div><div id="dash-zones"></div></div>
+
+  <!-- 12個月訓練規劃 -->
+  <div class="card" style="border-color:rgba(200,240,96,0.2)">
+    <div class="card-title" style="color:var(--acc)">🗓️ 訓練規劃 — 目標 2027/3 馬拉松</div>
+    <div style="margin-top:8px">
+
+      <div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start">
+        <div style="background:rgba(200,240,96,0.15);border:1px solid rgba(200,240,96,0.3);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--acc);white-space:nowrap;margin-top:2px">現在～6月</div>
+        <div>
+          <div style="font-size:13px;color:var(--txt);font-weight:600">有氧基礎強化</div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.7;margin-top:2px">Easy EF ≥ 1.55　LSD HR @214W 降至 ≤133<br>心率 ≤142，功率維持 210-220W</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--bdr);margin:8px 0"></div>
+
+      <div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start">
+        <div style="background:rgba(125,211,252,0.12);border:1px solid rgba(125,211,252,0.3);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--acc2);white-space:nowrap;margin-top:2px">7月～9月</div>
+        <div>
+          <div style="font-size:13px;color:var(--txt);font-weight:600">加入 Tempo</div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.7;margin-top:2px">每週一次 Tempo，有氧 + 乳酸閾值並行提升<br>目標：LTHR 173 附近能穩定輸出 30-40 分鐘</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--bdr);margin:8px 0"></div>
+
+      <div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start">
+        <div style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--warn);white-space:nowrap;margin-top:2px">10月～12月</div>
+        <div>
+          <div style="font-size:13px;color:var(--txt);font-weight:600">配速訓練 + 長跑拉長</div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.7;margin-top:2px">LSD 拉到 30-32km　感受馬拉松配速（5:50-6:10/km）<br>開始用配速區間取代純心率控制</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--bdr);margin:8px 0"></div>
+
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--danger);white-space:nowrap;margin-top:2px">1月～3月</div>
+        <div>
+          <div style="font-size:13px;color:var(--txt);font-weight:600">賽前準備 + 減量</div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.7;margin-top:2px">模擬配速　賽前3週減量<br><span style="color:var(--acc);font-weight:600">目標：Sub 4:10 ~ 4:20</span>　<span style="color:var(--txt3)">去年 4:51 → 基礎期預估 4:11</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- EF -->
+<div id="page-ef" class="page">
+  <div class="stat-grid" id="ef-stats"></div>
+  <div class="card">
+    <div class="card-title">EF 散點圖</div>
+    <div class="filters" id="ef-filters"></div>
+    <div class="chart-wrap" style="height:360px"><canvas id="c-ef-scatter"></canvas></div>
+  </div>
+</div>
+
+<!-- LSD -->
+<div id="page-lsd" class="page">
+  <div class="stat-grid" id="lsd-stats"></div>
+  <div class="card"><div class="card-title">EF vs 脫鉤率　<span style='font-size:10px;color:#555'>正值=心率漂移 負值=後半更穩</span></div><div class="chart-wrap" style="height:220px"><canvas id="c-lsd"></canvas></div></div>
+  <div class="card"><div class="card-title">逐次明細</div><div id="lsd-rows"></div></div>
+</div>
+
+<!-- MONTHLY -->
+<div id="page-monthly" class="page">
+  <div class="stat-grid" id="monthly-stats"></div>
+  <div class="card"><div class="card-title">里程 vs 次數</div><div class="chart-wrap" style="height:200px"><canvas id="c-monthly-km"></canvas></div></div>
+  <div class="card"><div class="card-title">平均心率趨勢</div><div class="chart-wrap" style="height:160px"><canvas id="c-monthly-hr"></canvas></div></div>
+  <div class="card"><div class="card-title">平均功率趨勢</div><div class="chart-wrap" style="height:160px"><canvas id="c-monthly-pwr"></canvas></div></div>
+</div>
+
+<!-- ZONES -->
+<div id="page-zones" class="page">
+  <div class="card"><div class="card-title">強度區間分佈（次數）</div><div class="chart-wrap" style="height:240px"><canvas id="c-zones"></canvas></div></div>
+  <div class="card"><div class="card-title">分佈明細</div><div id="zones-detail"></div></div>
+</div>
+
+<!-- LOG -->
+<div id="page-log" class="page">
+  <div class="filters" id="log-filters"></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table class="tbl" style="min-width:340px"><thead><tr><th>日期</th><th>類型</th><th>距離</th><th>均HR</th><th>EF</th></tr></thead>
+    <tbody id="log-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- RHR -->
+<div id="page-rhr" class="page">
+  <div class="stat-grid" id="rhr-stats"></div>
+  <div class="card"><div class="card-title">靜息心率 RHR</div><div class="chart-wrap" style="height:200px"><canvas id="c-rhr"></canvas></div></div>
+  <div class="card"><div class="card-title">HRV 趨勢（2月起）</div><div class="chart-wrap" style="height:180px"><canvas id="c-hrv"></canvas></div></div>
+</div>
+
+<script>
+const DATA = {"runs": [{"date": "2025-12-18", "type": "Easy", "dist": 2.55, "dur": 18.9, "avg_hr": 139, "max_hr": 150, "avg_power": 221, "ef": 1.5899, "zone": "Z2-有氧", "x_label": "12-18"}, {"date": "2025-12-19", "type": "Easy", "dist": 3.77, "dur": 33.3, "avg_hr": 135, "max_hr": 145, "avg_power": 186, "ef": 1.3778, "zone": "Z2-有氧", "x_label": "12-19"}, {"date": "2025-12-20", "type": "Easy", "dist": 13.49, "dur": 75.0, "avg_hr": 134, "max_hr": 149, "avg_power": 295, "ef": 2.2015, "zone": "Z2-有氧", "x_label": "12-20"}, {"date": "2025-12-22", "type": "Easy", "dist": 2.15, "dur": 16.8, "avg_hr": 134, "max_hr": 145, "avg_power": 211, "ef": 1.5746, "zone": "Z2-有氧", "x_label": "12-22"}, {"date": "2025-12-23", "type": "Easy", "dist": 2.24, "dur": 15.0, "avg_hr": 146, "max_hr": 154, "avg_power": 249, "ef": 1.7055, "zone": "Z3-閾值前", "x_label": "12-23"}, {"date": "2025-12-24", "type": "Easy", "dist": 4.52, "dur": 28.7, "avg_hr": 141, "max_hr": 177, "avg_power": 257, "ef": 1.8227, "zone": "Z2-有氧", "x_label": "12-24"}, {"date": "2025-12-25", "type": "Easy", "dist": 6.77, "dur": 55.0, "avg_hr": 131, "max_hr": 147, "avg_power": 202, "ef": 1.542, "zone": "Z2-有氧", "x_label": "12-25"}, {"date": "2025-12-26", "type": "Easy", "dist": 2.09, "dur": 16.3, "avg_hr": 139, "max_hr": 150, "avg_power": 217, "ef": 1.5612, "zone": "Z2-有氧", "x_label": "12-26"}, {"date": "2025-12-27", "type": "LSD", "dist": 16.91, "dur": 120.0, "avg_hr": 145, "max_hr": 166, "avg_power": 227, "ef": 1.5655, "zone": "Z3-閾值前", "x_label": "12-27"}, {"date": "2025-12-28", "type": "Easy", "dist": 8.46, "dur": 55.0, "avg_hr": 128, "max_hr": 142, "avg_power": 244, "ef": 1.9062, "zone": "Z1-恢復", "x_label": "12-28"}, {"date": "2025-12-29", "type": "Easy", "dist": 2.4, "dur": 20.1, "avg_hr": 138, "max_hr": 147, "avg_power": 193, "ef": 1.3986, "zone": "Z2-有氧", "x_label": "12-29"}, {"date": "2025-12-30", "type": "Easy", "dist": 4.85, "dur": 25.2, "avg_hr": 140, "max_hr": 160, "avg_power": 309, "ef": 2.2071, "zone": "Z2-有氧", "x_label": "12-30"}, {"date": "2025-12-31", "type": "Easy", "dist": 6.76, "dur": 45.8, "avg_hr": 145, "max_hr": 154, "avg_power": 244, "ef": 1.6828, "zone": "Z3-閾值前", "x_label": "12-31"}, {"date": "2026-01-02", "type": "Easy", "dist": 2.89, "dur": 21.8, "avg_hr": 140, "max_hr": 153, "avg_power": 222, "ef": 1.5857, "zone": "Z2-有氧", "x_label": "01-02"}, {"date": "2026-01-03", "type": "LSD", "dist": 18.94, "dur": 120.0, "avg_hr": 146, "max_hr": 162, "avg_power": 261, "ef": 1.7877, "zone": "Z3-閾值前", "x_label": "01-03"}, {"date": "2026-01-04", "type": "Easy", "dist": 4.57, "dur": 40.0, "avg_hr": 128, "max_hr": 147, "avg_power": 179, "ef": 1.3984, "zone": "Z1-恢復", "x_label": "01-04"}, {"date": "2026-01-05", "type": "Easy", "dist": 4.87, "dur": 38.6, "avg_hr": 135, "max_hr": 155, "avg_power": 206, "ef": 1.5259, "zone": "Z2-有氧", "x_label": "01-05"}, {"date": "2026-01-06", "type": "Easy", "dist": 5.95, "dur": 38.3, "avg_hr": 151, "max_hr": 169, "avg_power": 254, "ef": 1.6821, "zone": "Z3-閾值前", "x_label": "01-06"}, {"date": "2026-01-07", "type": "Easy", "dist": 6.24, "dur": 39.9, "avg_hr": 149, "max_hr": 159, "avg_power": 258, "ef": 1.7315, "zone": "Z3-閾值前", "x_label": "01-07"}, {"date": "2026-01-08", "type": "Easy", "dist": 4.75, "dur": 24.0, "avg_hr": 135, "max_hr": 147, "avg_power": 318, "ef": 2.3556, "zone": "Z2-有氧", "x_label": "01-08"}, {"date": "2026-01-09", "type": "Easy", "dist": 4.12, "dur": 29.2, "avg_hr": 145, "max_hr": 159, "avg_power": 228, "ef": 1.5724, "zone": "Z3-閾值前", "x_label": "01-09"}, {"date": "2026-01-10", "type": "LSD", "dist": 27.33, "dur": 180.0, "avg_hr": 154, "max_hr": 174, "avg_power": 244, "ef": 1.5844, "zone": "Z3-閾值前", "x_label": "01-10"}, {"date": "2026-01-12", "type": "Easy", "dist": 4.64, "dur": 32.2, "avg_hr": 149, "max_hr": 159, "avg_power": 230, "ef": 1.5436, "zone": "Z3-閾值前", "x_label": "01-12"}, {"date": "2026-01-13", "type": "Easy", "dist": 8.37, "dur": 50.1, "avg_hr": 157, "max_hr": 174, "avg_power": 269, "ef": 1.7134, "zone": "Z4-Tempo", "x_label": "01-13"}, {"date": "2026-01-14", "type": "Easy", "dist": 7.59, "dur": 52.3, "avg_hr": 149, "max_hr": 162, "avg_power": 233, "ef": 1.5638, "zone": "Z3-閾值前", "x_label": "01-14"}, {"date": "2026-01-16", "type": "Easy", "dist": 5.94, "dur": 38.5, "avg_hr": 146, "max_hr": 165, "avg_power": 251, "ef": 1.7192, "zone": "Z3-閾值前", "x_label": "01-16"}, {"date": "2026-01-17", "type": "LSD", "dist": 27.9, "dur": 180.0, "avg_hr": 150, "max_hr": 174, "avg_power": 246, "ef": 1.64, "zone": "Z3-閾值前", "x_label": "01-17"}, {"date": "2026-01-19", "type": "Easy", "dist": 2.9, "dur": 24.2, "avg_hr": 136, "max_hr": 150, "avg_power": 195, "ef": 1.4338, "zone": "Z2-有氧", "x_label": "01-19"}, {"date": "2026-01-20", "type": "VO2max", "dist": 5.05, "dur": 30.2, "avg_hr": 161, "max_hr": 186, "avg_power": 269, "ef": 1.6708, "zone": "Z4-Tempo", "x_label": "01-20"}, {"date": "2026-01-21", "type": "Easy", "dist": 4.55, "dur": 31.6, "avg_hr": 149, "max_hr": 169, "avg_power": 239, "ef": 1.604, "zone": "Z3-閾值前", "x_label": "01-21"}, {"date": "2026-01-22", "type": "Easy", "dist": 1.39, "dur": 14.3, "avg_hr": 137, "max_hr": 149, "avg_power": 176, "ef": 1.2847, "zone": "Z2-有氧", "x_label": "01-22"}, {"date": "2026-01-23", "type": "Easy", "dist": 1.64, "dur": 13.9, "avg_hr": 136, "max_hr": 143, "avg_power": 200, "ef": 1.4706, "zone": "Z2-有氧", "x_label": "01-23"}, {"date": "2026-01-24", "type": "LSD", "dist": 23.98, "dur": 159.0, "avg_hr": 152, "max_hr": 174, "avg_power": 244, "ef": 1.6053, "zone": "Z3-閾值前", "x_label": "01-24"}, {"date": "2026-01-25", "type": "Easy", "dist": 6.98, "dur": 60.0, "avg_hr": 130, "max_hr": 150, "avg_power": 176, "ef": 1.3538, "zone": "Z1-恢復", "x_label": "01-25"}, {"date": "2026-01-26", "type": "Easy", "dist": 3.15, "dur": 27.8, "avg_hr": 137, "max_hr": 147, "avg_power": 188, "ef": 1.3723, "zone": "Z2-有氧", "x_label": "01-26"}, {"date": "2026-01-27", "type": "Easy", "dist": 4.04, "dur": 26.0, "avg_hr": 154, "max_hr": 173, "avg_power": 244, "ef": 1.5844, "zone": "Z3-閾值前", "x_label": "01-27"}, {"date": "2026-01-28", "type": "VO2max", "dist": 5.73, "dur": 49.3, "avg_hr": 153, "max_hr": 188, "avg_power": 178, "ef": 1.1634, "zone": "Z3-閾值前", "x_label": "01-28"}, {"date": "2026-01-29", "type": "Easy", "dist": 2.9, "dur": 25.6, "avg_hr": 134, "max_hr": 151, "avg_power": 187, "ef": 1.3955, "zone": "Z2-有氧", "x_label": "01-29"}, {"date": "2026-01-30", "type": "Easy", "dist": 5.81, "dur": 45.5, "avg_hr": 146, "max_hr": 176, "avg_power": 192, "ef": 1.3151, "zone": "Z3-閾值前", "x_label": "01-30"}, {"date": "2026-02-01", "type": "Easy", "dist": 7.93, "dur": 60.9, "avg_hr": 139, "max_hr": 162, "avg_power": 211, "ef": 1.518, "zone": "Z2-有氧", "x_label": "02-01"}, {"date": "2026-02-03", "type": "Easy", "dist": 6.2, "dur": 43.2, "avg_hr": 150, "max_hr": 160, "avg_power": 229, "ef": 1.5267, "zone": "Z3-閾值前", "x_label": "02-03"}, {"date": "2026-02-08", "type": "Tempo", "dist": 5.96, "dur": 39.1, "avg_hr": 159, "max_hr": 179, "avg_power": 248, "ef": 1.5597, "zone": "Z4-Tempo", "x_label": "02-08"}, {"date": "2026-02-09", "type": "Easy", "dist": 9.71, "dur": 70.0, "avg_hr": 154, "max_hr": 170, "avg_power": 225, "ef": 1.461, "zone": "Z3-閾值前", "x_label": "02-09"}, {"date": "2026-02-10", "type": "Tempo", "dist": 9.56, "dur": 60.0, "avg_hr": 158, "max_hr": 178, "avg_power": 254, "ef": 1.6076, "zone": "Z4-Tempo", "x_label": "02-10"}, {"date": "2026-02-11", "type": "Easy", "dist": 7.27, "dur": 57.0, "avg_hr": 143, "max_hr": 162, "avg_power": 198, "ef": 1.3846, "zone": "Z3-閾值前", "x_label": "02-11"}, {"date": "2026-02-12", "type": "Easy", "dist": 2.72, "dur": 20.0, "avg_hr": 141, "max_hr": 159, "avg_power": 224, "ef": 1.5887, "zone": "Z2-有氧", "x_label": "02-12"}, {"date": "2026-02-13", "type": "Easy", "dist": 7.03, "dur": 57.0, "avg_hr": 140, "max_hr": 158, "avg_power": 191, "ef": 1.3643, "zone": "Z2-有氧", "x_label": "02-13"}, {"date": "2026-02-14", "type": "LSD", "dist": 19.94, "dur": 150.0, "avg_hr": 140, "max_hr": 158, "avg_power": 207, "ef": 1.4786, "zone": "Z2-有氧", "x_label": "02-14"}, {"date": "2026-02-16", "type": "Easy", "dist": 8.62, "dur": 75.0, "avg_hr": 137, "max_hr": 149, "avg_power": 187, "ef": 1.365, "zone": "Z2-有氧", "x_label": "02-16"}, {"date": "2026-02-17", "type": "Easy", "dist": 9.65, "dur": 75.0, "avg_hr": 148, "max_hr": 165, "avg_power": 209, "ef": 1.4122, "zone": "Z3-閾值前", "x_label": "02-17"}, {"date": "2026-02-18", "type": "LSD", "dist": 13.51, "dur": 96.0, "avg_hr": 148, "max_hr": 167, "avg_power": 221, "ef": 1.4932, "zone": "Z3-閾值前", "x_label": "02-18"}, {"date": "2026-02-19", "type": "Easy", "dist": 9.87, "dur": 75.0, "avg_hr": 141, "max_hr": 153, "avg_power": 211, "ef": 1.4965, "zone": "Z2-有氧", "x_label": "02-19"}, {"date": "2026-02-21", "type": "Easy", "dist": 12.68, "dur": 90.0, "avg_hr": 155, "max_hr": 167, "avg_power": 226, "ef": 1.4581, "zone": "Z3-閾值前", "x_label": "02-21"}, {"date": "2026-02-22", "type": "LSD", "dist": 26.86, "dur": 210.0, "avg_hr": 142, "max_hr": 165, "avg_power": 200, "ef": 1.4085, "zone": "Z2-有氧", "x_label": "02-22"}, {"date": "2026-02-23", "type": "Easy", "dist": 2.26, "dur": 18.4, "avg_hr": 134, "max_hr": 142, "avg_power": 194, "ef": 1.4478, "zone": "Z2-有氧", "x_label": "02-23"}, {"date": "2026-02-24", "type": "Easy", "dist": 5.47, "dur": 41.8, "avg_hr": 140, "max_hr": 153, "avg_power": 210, "ef": 1.5, "zone": "Z2-有氧", "x_label": "02-24a"}, {"date": "2026-02-24", "type": "Easy", "dist": 2.8, "dur": 22.5, "avg_hr": 133, "max_hr": 143, "avg_power": 202, "ef": 1.5188, "zone": "Z2-有氧", "x_label": "02-24b"}, {"date": "2026-02-25", "type": "Tempo", "dist": 8.75, "dur": 58.0, "avg_hr": 142, "max_hr": 154, "avg_power": 238, "ef": 1.6761, "zone": "Z2-有氧", "x_label": "02-25a"}, {"date": "2026-02-25", "type": "Easy", "dist": 1.5, "dur": 11.2, "avg_hr": 136, "max_hr": 145, "avg_power": 217, "ef": 1.5956, "zone": "Z2-有氧", "x_label": "02-25b"}, {"date": "2026-02-25", "type": "Easy", "dist": 1.21, "dur": 10.0, "avg_hr": 139, "max_hr": 148, "avg_power": 211, "ef": 1.518, "zone": "Z2-有氧", "x_label": "02-25c"}, {"date": "2026-02-27", "type": "LSD", "dist": 17.77, "dur": 135.0, "avg_hr": 143, "max_hr": 166, "avg_power": 208, "ef": 1.4545, "zone": "Z3-閾值前", "x_label": "02-27"}, {"date": "2026-02-28", "type": "Easy", "dist": 8.76, "dur": 75.0, "avg_hr": 140, "max_hr": 161, "avg_power": 188, "ef": 1.3429, "zone": "Z2-有氧", "x_label": "02-28"}, {"date": "2026-03-01", "type": "LSD", "dist": 23.13, "dur": 210.0, "avg_hr": 139, "max_hr": 162, "avg_power": 177, "ef": 1.2734, "zone": "Z2-有氧", "x_label": "03-01"}, {"date": "2026-03-02", "type": "Easy", "dist": 8.71, "dur": 75.0, "avg_hr": 131, "max_hr": 148, "avg_power": 184, "ef": 1.4046, "zone": "Z2-有氧", "x_label": "03-02"}, {"date": "2026-03-03", "type": "Easy", "dist": 10.14, "dur": 75.0, "avg_hr": 131, "max_hr": 146, "avg_power": 216, "ef": 1.6489, "zone": "Z2-有氧", "x_label": "03-03"}, {"date": "2026-03-04", "type": "Easy", "dist": 5.53, "dur": 44.4, "avg_hr": 134, "max_hr": 145, "avg_power": 201, "ef": 1.5, "zone": "Z2-有氧", "x_label": "03-04"}, {"date": "2026-03-06", "type": "Easy", "dist": 1.72, "dur": 14.0, "avg_hr": 136, "max_hr": 150, "avg_power": 194, "ef": 1.4265, "zone": "Z2-有氧", "x_label": "03-06"}, {"date": "2026-03-07", "type": "LSD", "dist": 26.44, "dur": 200.0, "avg_hr": 137, "max_hr": 158, "avg_power": 214, "ef": 1.562, "zone": "Z2-有氧", "x_label": "03-07"}, {"date": "2026-03-08", "type": "Easy", "dist": 9.68, "dur": 75.0, "avg_hr": 134, "max_hr": 156, "avg_power": 206, "ef": 1.5373, "zone": "Z2-有氧", "x_label": "03-08"}, {"date": "2026-03-09", "type": "Easy", "dist": 2.24, "dur": 20.0, "avg_hr": 140, "max_hr": 151, "avg_power": 185, "ef": 1.3214, "zone": "Z2-有氧", "x_label": "03-09"}, {"date": "2026-03-10", "type": "Easy", "dist": 4.35, "dur": 37.1, "avg_hr": 138, "max_hr": 151, "avg_power": 192, "ef": 1.3913, "zone": "Z2-有氧", "x_label": "03-10"}, {"date": "2026-03-11", "type": "Easy", "dist": 3.89, "dur": 32.0, "avg_hr": 135, "max_hr": 147, "avg_power": 195, "ef": 1.4444, "zone": "Z2-有氧", "x_label": "03-11"}, {"date": "2026-03-12", "type": "Easy", "dist": 1.22, "dur": 10.1, "avg_hr": 138, "max_hr": 147, "avg_power": 192, "ef": 1.3913, "zone": "Z2-有氧", "x_label": "03-12"}, {"date": "2026-03-13", "type": "Easy", "dist": 4.21, "dur": 31.5, "avg_hr": 139, "max_hr": 150, "avg_power": 212, "ef": 1.5252, "zone": "Z2-有氧", "x_label": "03-13"}, {"date": "2026-03-14", "type": "LSD", "dist": 18.7, "dur": 135.0, "avg_hr": 140, "max_hr": 181, "avg_power": 220, "ef": 1.5714, "zone": "Z2-有氧", "x_label": "03-14"}, {"date": "2026-03-16", "type": "Easy", "dist": 3.43, "dur": 25.6, "avg_hr": 142, "max_hr": 155, "avg_power": 209, "ef": 1.4718, "zone": "Z2-有氧", "x_label": "03-16"}, {"date": "2026-03-17", "type": "Tempo", "dist": 4.58, "dur": 31.0, "avg_hr": 155, "max_hr": 171, "avg_power": 233, "ef": 1.5032, "zone": "Z3-閾值前", "x_label": "03-17"}, {"date": "2026-03-18", "type": "Tempo", "dist": 7.36, "dur": 45.0, "avg_hr": 155, "max_hr": 172, "avg_power": 258, "ef": 1.6645, "zone": "Z3-閾值前", "x_label": "03-18"}, {"date": "2026-03-19", "type": "Easy", "dist": 1.47, "dur": 11.5, "avg_hr": 131, "max_hr": 148, "avg_power": 197, "ef": 1.5038, "zone": "Z2-有氧", "x_label": "03-19"}, {"date": "2026-03-20", "type": "Easy", "dist": 2.8, "dur": 21.1, "avg_hr": 144, "max_hr": 156, "avg_power": 221, "ef": 1.5347, "zone": "Z3-閾值前", "x_label": "03-20a"}, {"date": "2026-03-20", "type": "Easy", "dist": 1.15, "dur": 8.2, "avg_hr": 135, "max_hr": 146, "avg_power": 224, "ef": 1.6593, "zone": "Z2-有氧", "x_label": "03-20b"}, {"date": "2026-03-21", "type": "Easy", "dist": 12.51, "dur": 94.0, "avg_hr": 142, "max_hr": 155, "avg_power": 218, "ef": 1.5352, "zone": "Z2-有氧", "x_label": "03-21"}, {"date": "2026-03-23", "type": "Easy", "dist": 2.24, "dur": 20.0, "avg_hr": 139, "max_hr": 152, "avg_power": 186, "ef": 1.3381, "zone": "Z2-有氧", "x_label": "03-23"}, {"date": "2026-03-24", "type": "Easy", "dist": 1.24, "dur": 10.0, "avg_hr": 132, "max_hr": 141, "avg_power": 194, "ef": 1.4697, "zone": "Z2-有氧", "x_label": "03-24"}, {"date": "2026-03-25", "type": "Easy", "dist": 3.35, "dur": 26.2, "avg_hr": 139, "max_hr": 159, "avg_power": 201, "ef": 1.446, "zone": "Z2-有氧", "x_label": "03-25"}], "monthly": [{"month": "2025-12", "km": 77.0, "runs": 13, "avg_hr": 138.1, "avg_power": 235.0}, {"month": "2026-01", "km": 202.2, "runs": 26, "avg_hr": 144.6, "avg_power": 226.4}, {"month": "2026-02", "km": 206.0, "runs": 23, "avg_hr": 143.6, "avg_power": 213.4}, {"month": "2026-03", "km": 160.1, "runs": 23, "avg_hr": 138.5, "avg_power": 205.6}], "lsd": [{"date": "2025-12-27", "dist": 16.91, "avg_hr": 145, "ef": 1.5655, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-01-03", "dist": 18.94, "avg_hr": 146, "ef": 1.7877, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-01-10", "dist": 27.33, "avg_hr": 154, "ef": 1.5844, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-01-17", "dist": 27.9, "avg_hr": 150, "ef": 1.64, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-01-24", "dist": 23.98, "avg_hr": 152, "ef": 1.6053, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-02-14", "dist": 19.94, "avg_hr": 140, "ef": 1.4786, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-02-18", "dist": 13.51, "avg_hr": 148, "ef": 1.4932, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-02-22", "dist": 26.86, "avg_hr": 142, "ef": 1.4085, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-02-27", "dist": 17.77, "avg_hr": 143, "ef": 1.4545, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-03-01", "dist": 23.13, "avg_hr": 139, "ef": 1.2734, "decoupling": null, "grade": "❌ 需調整"}, {"date": "2026-03-07", "dist": 26.44, "avg_hr": 137, "ef": 1.562, "decoupling": null, "grade": "⚠️ 可改善"}, {"date": "2026-03-14", "dist": 18.7, "avg_hr": 140, "ef": 1.5714, "decoupling": null, "grade": "⚠️ 可改善"}], "rhr": [{"date": "2026-01-01", "rhr": 59.0, "hrv": null}, {"date": "2026-01-02", "rhr": 62.0, "hrv": null}, {"date": "2026-01-03", "rhr": 61.0, "hrv": null}, {"date": "2026-01-04", "rhr": 59.0, "hrv": null}, {"date": "2026-01-05", "rhr": 61.0, "hrv": null}, {"date": "2026-01-06", "rhr": 66.0, "hrv": null}, {"date": "2026-01-07", "rhr": 62.0, "hrv": null}, {"date": "2026-01-08", "rhr": 70.0, "hrv": null}, {"date": "2026-01-09", "rhr": 78.0, "hrv": null}, {"date": "2026-01-10", "rhr": 64.0, "hrv": null}, {"date": "2026-01-11", "rhr": 75.0, "hrv": null}, {"date": "2026-01-12", "rhr": 64.0, "hrv": null}, {"date": "2026-01-13", "rhr": 71.0, "hrv": null}, {"date": "2026-01-14", "rhr": 71.0, "hrv": null}, {"date": "2026-01-15", "rhr": 73.0, "hrv": null}, {"date": "2026-01-16", "rhr": 76.0, "hrv": null}, {"date": "2026-01-17", "rhr": 71.0, "hrv": null}, {"date": "2026-01-18", "rhr": 64.0, "hrv": null}, {"date": "2026-01-19", "rhr": 65.0, "hrv": null}, {"date": "2026-01-20", "rhr": 64.0, "hrv": null}, {"date": "2026-01-21", "rhr": 65.0, "hrv": null}, {"date": "2026-01-22", "rhr": 66.0, "hrv": null}, {"date": "2026-01-23", "rhr": 64.0, "hrv": null}, {"date": "2026-01-24", "rhr": 75.0, "hrv": null}, {"date": "2026-01-25", "rhr": 62.0, "hrv": null}, {"date": "2026-01-26", "rhr": 62.0, "hrv": null}, {"date": "2026-01-27", "rhr": 63.0, "hrv": null}, {"date": "2026-01-28", "rhr": 63.0, "hrv": null}, {"date": "2026-01-29", "rhr": 65.0, "hrv": null}, {"date": "2026-01-30", "rhr": 64.0, "hrv": null}, {"date": "2026-01-31", "rhr": 68.0, "hrv": null}, {"date": "2026-02-01", "rhr": 57.0, "hrv": null}, {"date": "2026-02-02", "rhr": 65.0, "hrv": null}, {"date": "2026-02-03", "rhr": 68.0, "hrv": null}, {"date": "2026-02-04", "rhr": 68.0, "hrv": null}, {"date": "2026-02-05", "rhr": 78.0, "hrv": null}, {"date": "2026-02-06", "rhr": 82.0, "hrv": null}, {"date": "2026-02-07", "rhr": 73.0, "hrv": null}, {"date": "2026-02-08", "rhr": 72.0, "hrv": null}, {"date": "2026-02-09", "rhr": 66.0, "hrv": null}, {"date": "2026-02-10", "rhr": 66.0, "hrv": null}, {"date": "2026-02-11", "rhr": 66.0, "hrv": null}, {"date": "2026-02-12", "rhr": 66.0, "hrv": null}, {"date": "2026-02-13", "rhr": 61.0, "hrv": null}, {"date": "2026-02-14", "rhr": 59.0, "hrv": null}, {"date": "2026-02-15", "rhr": 59.0, "hrv": 62.0}, {"date": "2026-02-16", "rhr": 59.0, "hrv": 55.0}, {"date": "2026-02-17", "rhr": 61.0, "hrv": 62.0}, {"date": "2026-02-18", "rhr": 59.0, "hrv": 58.0}, {"date": "2026-02-19", "rhr": 61.0, "hrv": 52.0}, {"date": "2026-02-20", "rhr": 68.0, "hrv": 47.0}, {"date": "2026-02-21", "rhr": 60.0, "hrv": 42.0}, {"date": "2026-02-22", "rhr": 65.0, "hrv": 51.0}, {"date": "2026-02-23", "rhr": 61.0, "hrv": 52.0}, {"date": "2026-02-24", "rhr": 65.0, "hrv": 56.0}, {"date": "2026-02-25", "rhr": 65.0, "hrv": 50.0}, {"date": "2026-02-26", "rhr": 65.0, "hrv": 51.0}, {"date": "2026-02-27", "rhr": 64.0, "hrv": 55.0}, {"date": "2026-02-28", "rhr": 64.0, "hrv": 64.0}, {"date": "2026-03-01", "rhr": 66.0, "hrv": 44.0}, {"date": "2026-03-02", "rhr": 73.0, "hrv": 54.0}, {"date": "2026-03-03", "rhr": 68.0, "hrv": 54.0}, {"date": "2026-03-04", "rhr": 63.0, "hrv": 56.0}, {"date": "2026-03-05", "rhr": 63.0, "hrv": 48.0}, {"date": "2026-03-06", "rhr": 66.0, "hrv": 54.0}, {"date": "2026-03-07", "rhr": 66.0, "hrv": 44.0}, {"date": "2026-03-08", "rhr": 63.0, "hrv": 49.0}, {"date": "2026-03-09", "rhr": 62.0, "hrv": 45.0}, {"date": "2026-03-10", "rhr": 60.0, "hrv": 50.0}, {"date": "2026-03-11", "rhr": 61.0, "hrv": 54.0}, {"date": "2026-03-12", "rhr": 63.0, "hrv": 47.0}, {"date": "2026-03-13", "rhr": 60.0, "hrv": 51.0}, {"date": "2026-03-14", "rhr": 64.0, "hrv": 42.0}, {"date": "2026-03-15", "rhr": 66.0, "hrv": 42.0}, {"date": "2026-03-16", "rhr": 60.0, "hrv": 51.0}, {"date": "2026-03-17", "rhr": 66.0, "hrv": 64.0}, {"date": "2026-03-18", "rhr": 66.0, "hrv": 43.0}, {"date": "2026-03-19", "rhr": 66.0, "hrv": 46.0}, {"date": "2026-03-20", "rhr": 66.0, "hrv": 47.0}, {"date": "2026-03-21", "rhr": 63.0, "hrv": 46.0}, {"date": "2026-03-22", "rhr": 82.0, "hrv": 49.0}, {"date": "2026-03-23", "rhr": 82.0, "hrv": 39.0}, {"date": "2026-03-24", "rhr": 92.0, "hrv": 42.0}, {"date": "2026-03-25", "rhr": 74.0, "hrv": 39.0}, {"date": "2026-03-26", "rhr": 67.0, "hrv": 45.0}]};
+
+const APP_STATE = {
+  dataSource: 'embedded',
+  syncedAt: ''
+};
+
+function runtimeUrls(fileName) {
+  return ['runtime/' + fileName, './runtime/' + fileName];
+}
+
+function replaceObjectContents(target, nextValue) {
+  Object.keys(target).forEach(key => delete target[key]);
+  Object.assign(target, nextValue);
+}
+
+function runtimeLabel(source) {
+  return source === 'runtime-file' ? 'runtime JSON' : '內嵌快照';
+}
+
+function updateRuntimeBar() {
+  const pill = $('runtime-pill');
+  const copy = $('runtime-copy');
+  if (!pill || !copy) return;
+
+  pill.textContent = runtimeLabel(APP_STATE.dataSource);
+  pill.className = `runtime-pill ${APP_STATE.dataSource === 'runtime-file' ? 'live' : 'fallback'}`;
+  copy.textContent = APP_STATE.syncedAt
+    ? `目前使用 ${runtimeLabel(APP_STATE.dataSource)}，同步日 ${APP_STATE.syncedAt}`
+    : `目前使用 ${runtimeLabel(APP_STATE.dataSource)}`;
+}
+
+async function loadRuntimePayload(fileName, fallbackValue) {
+  for (const url of runtimeUrls(fileName)) {
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) continue;
+      const payload = await response.json();
+      return { payload, source: 'runtime-file' };
+    } catch (_) {}
+  }
+  return { payload: fallbackValue, source: 'embedded' };
+}
+
+async function bootstrapRuntime() {
+  const [dataResult, blueprintResult] = await Promise.all([
+    loadRuntimePayload('data.json', DATA),
+    loadRuntimePayload('blueprint.json', null),
+  ]);
+
+  if (dataResult.payload && typeof dataResult.payload === 'object') {
+    replaceObjectContents(DATA, dataResult.payload);
+  }
+
+  APP_STATE.dataSource = dataResult.source;
+  APP_STATE.syncedAt = blueprintResult.payload?.meta?.syncedAt || '';
+  updateRuntimeBar();
+}
+
+function reloadRuntimeApp() {
+  window.location.reload();
+}
+
+// ── helpers ──────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const charts = {};
+
+const cfg = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { ticks: { color:'#777', font:{size:11} }, grid:{color:'rgba(255,255,255,0.04)'} },
+    y: { ticks: { color:'#777', font:{size:11} }, grid:{color:'rgba(255,255,255,0.04)'} }
+  }
+};
+
+function mkChart(id, type, labels, datasets, extraOpts={}) {
+  if (charts[id]) charts[id].destroy();
+  const el = $(id);
+  if (!el) return;
+  charts[id] = new Chart(el, {
+    type,
+    data: { labels, datasets },
+    options: Object.assign({}, cfg, extraOpts)
+  });
+}
+
+function stat(label, val, sub='', cls='') {
+  return `<div class="stat"><div class="stat-label">${label}</div><div class="stat-val ${cls}">${val}</div><div class="stat-sub">${sub}</div></div>`;
+}
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $('page-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  initPage(id);
+}
+
+const inited = {};
+function initPage(id) {
+  if (inited[id]) return;
+  inited[id] = true;
+  if (id === 'dash') initDash();
+  if (id === 'ef') initEF();
+  if (id === 'lsd') initLSD();
+  if (id === 'monthly') initMonthly();
+  if (id === 'zones') initZones();
+  if (id === 'log') initLog();
+  if (id === 'rhr') initRHR();
+}
+
+// ── DASH ─────────────────────────────────────────────
+function initDash() {
+  const runs = DATA.runs;
+  const totalKm = runs.reduce((s,r)=>s+r.dist,0).toFixed(1);
+  const easy = runs.filter(r=>r.type==='Easy');
+  const lsd = runs.filter(r=>r.type==='LSD');
+  const easyEF = easy.length ? (easy.reduce((s,r)=>s+r.ef,0)/easy.length).toFixed(3) : '-';
+  const lsdEF = lsd.length ? (lsd.reduce((s,r)=>s+r.ef,0)/lsd.length).toFixed(3) : '-';
+  const lastHR = runs.slice(-10).reduce((s,r)=>s+r.avg_hr,0)/Math.min(10,runs.length);
+
+  $('dash-stats').innerHTML =
+    stat('累計里程', totalKm+' km', runs.length+' 次跑步', 'g') +
+    stat('Easy EF均值', easyEF, easy.length+' 次', easy[0]&&parseFloat(easyEF)>=1.5?'g':'') +
+    stat('LSD EF均值', lsdEF, lsd.length+' 次', lsd[0]&&parseFloat(lsdEF)>=1.45?'g':'w') +
+    stat('近期均心率', Math.round(lastHR)+' bpm', '最後10次', lastHR<140?'g':'w');
+
+  // insights
+  const recentEasy = easy.slice(-8);
+  const recentEF = recentEasy.length ? recentEasy.reduce((s,r)=>s+r.ef,0)/recentEasy.length : 0;
+  const lastLSD = DATA.lsd[DATA.lsd.length-1];
+  const insights = [
+    recentEF >= 1.5 ? `✅ 近期 Easy EF 均值 ${recentEF.toFixed(3)}，有氧效率良好` : `⚠️ 近期 Easy EF 均值 ${recentEF.toFixed(3)}，建議維持低強度`,
+    lastLSD ? `📊 最近一次 LSD（${lastLSD.date}）：EF ${lastLSD.ef}${lastLSD.decoupling!=null?'，脫鉤率 '+lastLSD.decoupling+'%':''}` : '',
+    DATA.lsd.length >= 3 ? (() => {
+      const withDc = DATA.lsd.slice(-3).filter(r=>r.decoupling!=null);
+      if (!withDc.length) return '📊 LSD 脫鉤率資料待同步，執行 garmin_to_app.py 更新';
+      const avgDc = withDc.reduce((s,r)=>s+r.decoupling,0)/withDc.length;
+      return avgDc < 5 ? `🟢 近 3 次 LSD 平均脫鉤率 ${avgDc.toFixed(1)}%，心肺效率優秀` : `🟡 近 3 次 LSD 平均脫鉤率 ${avgDc.toFixed(1)}%，持續觀察`;
+    })() : '',
+    `📅 本月已跑 ${DATA.monthly[DATA.monthly.length-1]?.km||0} km`
+  ].filter(Boolean);
+
+  $('dash-insight-body').innerHTML = insights.map(i=>`<div class="insight-item">${i}</div>`).join('');
+
+  // EF line - last 20
+  const last20 = runs.slice(-20);
+  mkChart('c-ef-dash','line',
+    last20.map(r=>r.date.slice(5)),
+    [{data:last20.map(r=>r.ef),borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,0.08)',pointRadius:2,tension:.3,borderWidth:1.5}],
+    {scales:{x:{...cfg.scales.x,ticks:{...cfg.scales.x.ticks,maxTicksLimit:6}},y:{...cfg.scales.y}}}
+  );
+
+  // Monthly km bar
+  mkChart('c-km-dash','bar',
+    DATA.monthly.map(m=>m.month.slice(5)),
+    [{data:DATA.monthly.map(m=>m.km),backgroundColor:'rgba(200,240,96,0.5)',borderColor:'#c8f060',borderWidth:1,borderRadius:4}]
+  );
+
+  // Zone progress bars
+  const zones = {};
+  runs.forEach(r=>{ zones[r.zone]=(zones[r.zone]||0)+1; });
+  const total = runs.length;
+  const zColors = {'Z1-恢復':'#7dd3fc','Z2-有氧':'#c8f060','Z3-閾值前':'#fbbf24','Z4-Tempo':'#f87171','Z5-無氧':'#f472b6'};
+  $('dash-zones').innerHTML = Object.entries(zones).sort((a,b)=>b[1]-a[1]).map(([z,n])=>
+    `<div class="prog-row"><div class="prog-label">${z.replace(/^Z\d-/,'')}</div><div class="prog-track"><div class="prog-fill" style="width:${(n/total*100).toFixed(0)}%;background:${zColors[z]||'#888'}"></div></div><div class="prog-val">${n}次</div></div>`
+  ).join('');
+}
+
+// ── EF ───────────────────────────────────────────────
+let efFilter = 'All';
+function initEF() {
+  const runs = DATA.runs;
+  const easy = runs.filter(r=>r.type==='Easy');
+  const lsd = runs.filter(r=>r.type==='LSD');
+  const tempo = runs.filter(r=>r.type==='Tempo');
+  const easyEF = easy.reduce((s,r)=>s+r.ef,0)/easy.length;
+  const recent = easy.slice(-10);
+  const recentEF = recent.reduce((s,r)=>s+r.ef,0)/recent.length;
+
+  $('ef-stats').innerHTML =
+    stat('Easy EF均', easyEF.toFixed(3), '全期', easyEF>=1.5?'g':'') +
+    stat('近期EF均', recentEF.toFixed(3), '最後10次Easy', recentEF>=1.5?'g':'') +
+    stat('LSD EF均', lsd.length?(lsd.reduce((s,r)=>s+r.ef,0)/lsd.length).toFixed(3):'-', lsd.length+'次') +
+    stat('Tempo次數', tempo.length, 'LTHR=173');
+
+  // Filter pills
+  const types = ['All','Easy','LSD','Tempo'];
+  $('ef-filters').innerHTML = types.map(t=>`<button class="pill${t===efFilter?' active':''}" onclick="setEFFilter('${t}')">${t}</button>`).join('');
+  drawEFScatter();
+}
+
+function setEFFilter(t) {
+  efFilter = t;
+  document.querySelectorAll('#ef-filters .pill').forEach(p=>{
+    p.classList.toggle('active', p.textContent===t);
+  });
+  drawEFScatter();
+}
+
+function drawEFScatter() {
+  const colors = {Easy:'#c8f060',LSD:'#7dd3fc',Tempo:'#f472b6'};
+  const filtered = efFilter==='All' ? DATA.runs : DATA.runs.filter(r=>r.type===efFilter);
+  const datasets = efFilter==='All'
+    ? ['Easy','LSD','Tempo'].map(type=>({
+        label:type,
+        data: DATA.runs.filter(r=>r.type===type).map(r=>({x:r.x_label||r.date.slice(5),y:r.ef})),
+        backgroundColor: colors[type]+'99',
+        borderColor: colors[type],
+        pointRadius:4, pointHoverRadius:6, showLine:false
+      }))
+    : [{
+        label:efFilter,
+        data: filtered.map(r=>({x:r.x_label||r.date.slice(5),y:r.ef})),
+        backgroundColor: (colors[efFilter]||'#888')+'99',
+        borderColor: colors[efFilter]||'#888',
+        pointRadius:4, showLine:false
+      }];
+
+  if (charts['c-ef-scatter']) charts['c-ef-scatter'].destroy();
+  const el = $('c-ef-scatter');
+  if (!el) return;
+  charts['c-ef-scatter'] = new Chart(el, {
+    type:'scatter',
+    data:{ datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:efFilter==='All',labels:{color:'#888',font:{size:11}}}},
+      scales:{
+        x:{type:'category',ticks:{color:'#777',font:{size:11},maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'#777',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'}}
+      }
+    }
+  });
+}
+
+// ── LSD ──────────────────────────────────────────────
+function initLSD() {
+  const lsd = DATA.lsd;
+  if (!lsd.length) return;
+  const avgEF = lsd.reduce((s,r)=>s+r.ef,0)/lsd.length;
+  const lsdWithDc = lsd.filter(r=>r.decoupling!=null);
+  const avgDc = lsdWithDc.length ? lsdWithDc.reduce((s,r)=>s+r.decoupling,0)/lsdWithDc.length : null;
+  const best = lsdWithDc.length ? lsdWithDc.reduce((b,r)=>r.decoupling<b.decoupling?r:b) : null;
+  const recent3WithDc = lsd.slice(-3).filter(r=>r.decoupling!=null);
+  const recent3dc = recent3WithDc.length ? recent3WithDc.reduce((s,r)=>s+r.decoupling,0)/recent3WithDc.length : null;
+
+  $('lsd-stats').innerHTML =
+    stat('LSD均EF', avgEF.toFixed(3), lsd.length+'次', avgEF>=1.45?'g':'') +
+    stat('均脫鉤率', avgDc!=null?avgDc.toFixed(1)+'%':'暫無', '目標<5%', avgDc!=null&&avgDc<5?'g':'') +
+    stat('最佳脫鉤', best?best.decoupling.toFixed(1)+'%':'暫無', best?best.date:'', 'g') +
+    stat('近3次脫鉤', recent3dc!=null?recent3dc.toFixed(1)+'%':'暫無', '移動均值', recent3dc!=null&&recent3dc<5?'g':'');
+
+  // dual axis chart
+  if (charts['c-lsd']) charts['c-lsd'].destroy();
+  const el = $('c-lsd');
+  if (!el) return;
+  const efVals = lsd.map(r=>r.ef).filter(Boolean);
+  const dcVals = lsd.map(r=>r.decoupling).filter(v=>v!=null);
+  const efMin = Math.floor((Math.min(...efVals) - 0.1) * 10) / 10;
+  const efMax = Math.ceil((Math.max(...efVals) + 0.1) * 10) / 10;
+  const dcAbs = dcVals.length ? Math.max(Math.abs(Math.min(...dcVals)), Math.abs(Math.max(...dcVals))) : 10;
+  const dcRange = Math.ceil((dcAbs + 2) / 5) * 5;
+  charts['c-lsd'] = new Chart(el, {
+    type:'line',
+    data:{
+      labels: lsd.map(r=>r.date.slice(5)),
+      datasets:[
+        {label:'EF值',data:lsd.map(r=>r.ef),borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,0.08)',yAxisID:'y',pointRadius:4,tension:.2,borderWidth:2},
+        {label:'脫鉤率%',data:lsd.map(r=>r.decoupling),borderColor:'#f87171',backgroundColor:'rgba(248,113,113,0.08)',yAxisID:'y2',pointRadius:4,tension:.2,borderWidth:2}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#888',font:{size:11}}}},
+      scales:{
+        x:{ticks:{color:'#777',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{position:'left',min:efMin,max:efMax,ticks:{color:'#c8f060',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y2:{position:'right',min:-dcRange,max:dcRange,ticks:{color:'#f87171',font:{size:11}},grid:{display:false}}
+      }
+    }
+  });
+
+  // rows
+  $('lsd-rows').innerHTML = [...lsd].reverse().map(r=>{
+    const dcColor = r.decoupling!=null?(r.decoupling<5?'#c8f060':r.decoupling<8?'#fbbf24':'#f87171'):'#555';
+    return `<div class="lsd-row">
+      <div><div class="lsd-date">${r.date}</div><div class="lsd-grade" style="font-size:10px;color:#555">${r.grade}</div></div>
+      <div class="lsd-vals">
+        <span>${r.dist}km</span>
+        <span class="lsd-ef">EF ${r.ef}</span>
+        <span style="color:${dcColor}">${r.decoupling!=null?'脫鉤 '+r.decoupling+'%':'脫鉤 N/A'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MONTHLY ───────────────────────────────────────────
+function initMonthly() {
+  const m = DATA.monthly;
+  const maxKm = Math.max(...m.map(x=>x.km));
+  const bestMonth = m.reduce((b,x)=>x.km>b.km?x:b);
+
+  $('monthly-stats').innerHTML =
+    stat('最高月里程', bestMonth.km+' km', bestMonth.month, 'g') +
+    stat('最多月次數', Math.max(...m.map(x=>x.runs))+'次', '') +
+    stat('均月里程', (m.reduce((s,x)=>s+x.km,0)/m.length).toFixed(0)+' km','') +
+    stat('月份數', m.length+'個月','');
+
+  mkChart('c-monthly-km','bar',m.map(x=>x.month.slice(5)),
+    [{data:m.map(x=>x.km),backgroundColor:'rgba(200,240,96,0.5)',borderColor:'#c8f060',borderWidth:1,borderRadius:4,label:'里程km'}],
+    {plugins:{legend:{display:false}}}
+  );
+  mkChart('c-monthly-hr','line',m.map(x=>x.month.slice(5)),
+    [{data:m.map(x=>x.avg_hr),borderColor:'#f87171',backgroundColor:'rgba(248,113,113,0.1)',pointRadius:4,tension:.3,borderWidth:2}]
+  );
+  mkChart('c-monthly-pwr','line',m.map(x=>x.month.slice(5)),
+    [{data:m.map(x=>x.avg_power),borderColor:'#7dd3fc',backgroundColor:'rgba(125,211,252,0.1)',pointRadius:4,tension:.3,borderWidth:2}]
+  );
+}
+
+// ── ZONES ─────────────────────────────────────────────
+function initZones() {
+  const zones = {};
+  DATA.runs.forEach(r=>{ zones[r.zone]=(zones[r.zone]||0)+1; });
+  const order = ['Z1-恢復','Z2-有氧','Z3-閾值前','Z4-Tempo','Z5-無氧'];
+  const colors = ['#7dd3fc','#c8f060','#fbbf24','#f87171','#f472b6'];
+  const labels = order.filter(z=>zones[z]);
+  const vals = labels.map(z=>zones[z]);
+  const cols = labels.map(z=>colors[order.indexOf(z)]);
+
+  mkChart('c-zones','bar',labels,
+    [{data:vals,backgroundColor:cols.map(c=>c+'99'),borderColor:cols,borderWidth:1,borderRadius:4}],
+    {indexAxis:'y'}
+  );
+
+  const total = DATA.runs.length;
+  $('zones-detail').innerHTML = labels.map((z,i)=>
+    `<div class="prog-row"><div class="prog-label">${z}</div><div class="prog-track"><div class="prog-fill" style="width:${(vals[i]/total*100).toFixed(0)}%;background:${cols[i]}"></div></div><div class="prog-val">${vals[i]}次 (${(vals[i]/total*100).toFixed(0)}%)</div></div>`
+  ).join('');
+}
+
+// ── LOG ───────────────────────────────────────────────
+let logFilter = 'All';
+function initLog() {
+  const types = ['All','Easy','LSD','Tempo'];
+  $('log-filters').innerHTML = types.map(t=>`<button class="pill${t===logFilter?' active':''}" onclick="setLogFilter('${t}')">${t}</button>`).join('');
+  renderLog();
+}
+function setLogFilter(t) {
+  logFilter = t;
+  document.querySelectorAll('#log-filters .pill').forEach(p=>p.classList.toggle('active',p.textContent===t));
+  renderLog();
+}
+function renderLog() {
+  const runs = logFilter==='All'?DATA.runs:DATA.runs.filter(r=>r.type===logFilter);
+  const bclass = {Easy:'b-easy',LSD:'b-lsd',Tempo:'b-tempo',VO2max:'b-vo2max'};
+  $('log-body').innerHTML = [...runs].reverse().map(r=>
+    `<tr><td>${r.date}</td><td><span class="badge ${bclass[r.type]||''}">${r.type}</span></td><td>${r.dist}km</td><td>${r.avg_hr}</td><td>${r.ef}</td></tr>`
+  ).join('');
+}
+
+// ── RHR ───────────────────────────────────────────────
+function initRHR() {
+  const rhr = DATA.rhr.filter(r=>r.rhr!==null);
+  const hrv = DATA.rhr.filter(r=>r.hrv!==null);
+  const avgRHR = rhr.reduce((s,r)=>s+r.rhr,0)/rhr.length;
+  const minRHR = Math.min(...rhr.map(r=>r.rhr));
+  const avgHRV = hrv.length ? hrv.reduce((s,r)=>s+r.hrv,0)/hrv.length : 0;
+  const lastHRV = hrv.length ? hrv[hrv.length-1].hrv : 0;
+
+  $('rhr-stats').innerHTML =
+    stat('平均RHR', avgRHR.toFixed(0)+' bpm','', avgRHR<65?'g':'') +
+    stat('最低RHR', minRHR+' bpm','歷史最佳','g') +
+    stat('平均HRV', avgHRV.toFixed(0)+' ms', hrv.length+'天', avgHRV>50?'g':'') +
+    stat('最新HRV', lastHRV+' ms', hrv.length?hrv[hrv.length-1].date:'');
+
+  mkChart('c-rhr','line',rhr.map(r=>r.date.slice(5)),
+    [{data:rhr.map(r=>r.rhr),borderColor:'#f87171',backgroundColor:'rgba(248,113,113,0.08)',pointRadius:2,tension:.3,borderWidth:1.5}],
+    {scales:{x:{...cfg.scales.x,ticks:{...cfg.scales.x.ticks,maxTicksLimit:8}},y:{...cfg.scales.y,min:50,max:90}}}
+  );
+
+  if (hrv.length) {
+    mkChart('c-hrv','line',hrv.map(r=>r.date.slice(5)),
+      [{data:hrv.map(r=>r.hrv),borderColor:'#7dd3fc',backgroundColor:'rgba(125,211,252,0.08)',pointRadius:3,tension:.3,borderWidth:1.5}],
+      {scales:{x:{...cfg.scales.x,ticks:{...cfg.scales.x.ticks,maxTicksLimit:8}},y:{...cfg.scales.y,min:30,max:80}}}
+    );
+  }
+}
+
+// ── init ─────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  updateRuntimeBar();
+  if (typeof Chart === 'undefined') {
+    document.body.innerHTML += '<div style="position:fixed;bottom:20px;left:20px;right:20px;background:#1e1e1e;border:1px solid #f87171;border-radius:8px;padding:16px;color:#f87171;font-size:12px">⚠️ 圖表庫載入失敗，請確認 chart.umd.js 在同一個資料夾</div>';
+    return;
+  }
+  await bootstrapRuntime();
+  initPage('dash');
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
