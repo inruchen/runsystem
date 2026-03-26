@@ -271,7 +271,7 @@ async function bootstrapRuntime() {
     loadRuntimePayload('blueprint.json', null),
   ]);
 
-  if (dataResult.payload && typeof dataResult.payload === 'object') {
+  if (dataResult.source === 'runtime-file' && dataResult.payload && typeof dataResult.payload === 'object') {
     replaceObjectContents(DATA, dataResult.payload);
   }
 
